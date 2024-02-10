@@ -10,7 +10,7 @@ from data inconsistency caused by [dual writes](https://thorben-janssen.com/dual
 
 ![Architecture that shows Debezium consuming changes from a Neon Postgres database and streaming the changes to Redis](/images/architecture.png)
 
-## Usage
+## Getting Started
 
 1. Obtain a Neon Postgres database.
 2. Obtain a Redis instance from Upstash.
@@ -75,4 +75,32 @@ that a `debezium.public.playing_with_neon` [Redis stream](https://redis.io/docs/
 has been created, and contains records corresponding to `INSERT` events from
 your `playing_with_neon` table.
 
+Perofrming more `INSERT` or `UPDATE` operations will result in new messages appearing in
+the Redis stream.
+
 ![](/images/upstash-data-browser.png)
+
+## Consuming the Change Stream
+
+A sample application is included in the *stream-consumer/* folder. It uses the
+Redis Node.js client to consume the stream of database changes in the 
+`debezium.public.playing_with_neon` Redis key, and create a sum of "scores" for
+each player in Redis.
+
+For example, performing the following two `INSERT` operations would result in a
+`sum:mario` key being created in Redis with a value of `2.1`:
+
+```sql
+INSERT INTO playing_with_neon (name, value) VALUES ('Mario', '1.5')
+INSERT INTO playing_with_neon (name, value) VALUES ('Mario', '0.6')
+```
+
+To run the Node.js application:
+
+1. Create a copy of the `.env.example` named `.env` in thw *stream-consumer/* folder.
+1. Replace the sample values with your Upstash Redis connection parameters. Note that `rediss://` is the correct protocol to use if SSL is enabled for your Upstash Redis instance.
+1. Run `npm install` to install dependencies.
+1. Run `npm run` to start the application.
+
+Once the application starts it will continuously update Redis keys as `INSERT`
+events are written to the stream key by Debezium.
